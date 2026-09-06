@@ -1,0 +1,2 @@
+# Study
+BSUIR way

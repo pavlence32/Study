@@ -1,0 +1,3 @@
+Type: Minik Departure: 09:34
+Type: Bus Departure: 11:00
+Type: Avto Departure: 15:00

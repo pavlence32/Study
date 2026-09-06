@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ваня</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .fullscreen-text {
+            font-size: 10vw; /* Адаптивный размер шрифта */
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            text-transform: uppercase;
+            padding: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Для мобильных устройств */
+        @media (max-width: 768px) {
+            .fullscreen-text {
+                font-size: 15vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="fullscreen-text">Ваня гей</div>
+</body>
+</html>
