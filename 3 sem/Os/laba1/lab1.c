@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 void report_self(void) {
-    printf("Я процесс: ID = %d, ID родителя = %d\n", getpid(), getppid());
+    printf("Процесс: ID = %d, ID родителя = %d\n", getpid(), getppid());
 }
 
 void report_spawn(pid_t child_pid) {
