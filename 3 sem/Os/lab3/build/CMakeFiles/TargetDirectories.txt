@@ -1,0 +1,4 @@
+/Users/pavelkozevnikov/Projects/Study/3 sem/Os/lab3/build/CMakeFiles/mm.dir
+/Users/pavelkozevnikov/Projects/Study/3 sem/Os/lab3/build/CMakeFiles/tests.dir
+/Users/pavelkozevnikov/Projects/Study/3 sem/Os/lab3/build/CMakeFiles/edit_cache.dir
+/Users/pavelkozevnikov/Projects/Study/3 sem/Os/lab3/build/CMakeFiles/rebuild_cache.dir

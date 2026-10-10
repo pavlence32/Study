@@ -1,5 +1,3 @@
-
-
 #include <fcntl.h>
 #include <semaphore.h>
 #include <sys/mman.h>
@@ -10,27 +8,25 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
+#include <new>
 #include <random>
 
-constexpr int BUF_SIZE   = 8;      
-constexpr int COUNT      = 50;     
-constexpr int STOP_VALUE = -1;     
+constexpr int BUF_SIZE   = 8;
+constexpr int COUNT      = 50;
+constexpr int STOP_VALUE = -1;
 constexpr const char* OUT_FILE = "output.txt";
 
-
 struct Channel {
-    sem_t empty;          
-    sem_t full;           
-    int   buf[BUF_SIZE];
-    int   head;           
-    int   tail;           
+    sem_t* empty;   
+    sem_t* full;    
+    int    buf[BUF_SIZE];
+    int    head;
+    int    tail;
 };
 
 struct Shared {
-    Channel ch[2];        
+    Channel ch[2];
 };
-
 
 static void sem_wait_retry(sem_t* s) {
     while (sem_wait(s) == -1) {
@@ -41,29 +37,40 @@ static void sem_wait_retry(sem_t* s) {
     }
 }
 
-static void channel_init(Channel& c) {
-    if (sem_init(&c.empty, 1, BUF_SIZE) == -1 || sem_init(&c.full, 1, 0) == -1) {
-        perror("sem_init");
+
+static sem_t* make_sem(const char* tag, int idx, unsigned value) {
+    char name[32];  
+    std::snprintf(name, sizeof(name), "/p_%s%d_%d", tag, idx, getpid());
+    sem_unlink(name);  
+    sem_t* s = sem_open(name, O_CREAT | O_EXCL, 0600, value);
+    if (s == SEM_FAILED) {
+        perror("sem_open");
         exit(1);
     }
+    sem_unlink(name);  
+    return s;
+}
+
+static void channel_init(Channel& c, int idx) {
+    c.empty = make_sem("e", idx, BUF_SIZE);
+    c.full  = make_sem("f", idx, 0);
     c.head = c.tail = 0;
 }
 
 static void channel_put(Channel& c, int value) {
-    sem_wait_retry(&c.empty);           
+    sem_wait_retry(c.empty);
     c.buf[c.tail] = value;
     c.tail = (c.tail + 1) % BUF_SIZE;
-    sem_post(&c.full);                  
+    sem_post(c.full);
 }
 
 static int channel_get(Channel& c) {
-    sem_wait_retry(&c.full);            
+    sem_wait_retry(c.full);
     int value = c.buf[c.head];
     c.head = (c.head + 1) % BUF_SIZE;
-    sem_post(&c.empty);                 
+    sem_post(c.empty);
     return value;
 }
-
 
 static void run_console_consumer(Channel& c) {
     for (;;) {
@@ -74,12 +81,10 @@ static void run_console_consumer(Channel& c) {
     }
 }
 
-
 static void run_file_consumer(Channel& c) {
     FILE* f = std::fopen(OUT_FILE, "w");
     if (!f) {
         perror("fopen");
-        
     }
     for (;;) {
         int v = channel_get(c);
@@ -90,7 +95,6 @@ static void run_file_consumer(Channel& c) {
 }
 
 int main() {
-   
     char name[64];
     std::snprintf(name, sizeof(name), "/p_shm_%d", getpid());
 
@@ -101,13 +105,12 @@ int main() {
     void* mem = mmap(nullptr, sizeof(Shared), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (mem == MAP_FAILED) { perror("mmap"); return 1; }
     close(fd);
-    shm_unlink(name);   
+    shm_unlink(name);
 
     Shared* sh = new (mem) Shared;
-    channel_init(sh->ch[0]);
-    channel_init(sh->ch[1]);
+    channel_init(sh->ch[0], 0);
+    channel_init(sh->ch[1], 1);
 
-    
     pid_t p1 = fork();
     if (p1 == -1) { perror("fork p1"); return 1; }
     if (p1 == 0) {
@@ -122,7 +125,6 @@ int main() {
         _exit(0);
     }
 
-    
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> dist(0, 999);
@@ -132,17 +134,15 @@ int main() {
         channel_put(sh->ch[0], x);
         channel_put(sh->ch[1], x);
     }
-    
     channel_put(sh->ch[0], STOP_VALUE);
     channel_put(sh->ch[1], STOP_VALUE);
 
-   
     waitpid(p1, nullptr, 0);
     waitpid(p2, nullptr, 0);
 
     for (auto& c : sh->ch) {
-        sem_destroy(&c.empty);
-        sem_destroy(&c.full);
+        sem_close(c.empty);
+        sem_close(c.full);
     }
     munmap(mem, sizeof(Shared));
     return 0;
