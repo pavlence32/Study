@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmm.a CMakeFiles/mm.dir/memory.c.o
+/usr/bin/ranlib libmm.a
